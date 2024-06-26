@@ -5,11 +5,12 @@ import random
 
 class Timberman():
     def __init__(self):
-        self.game = True
         # Wczytanie obrazów postaci
         self.timberman1 = pygame.image.load('Assets/imgs/Player/Player0.png')
         self.timberman2 = pygame.image.load('Assets/imgs/Player/Player1.png')
         self.timberman3 = pygame.image.load('Assets/imgs/Player/Player2.png')
+        self.rip = pygame.image.load('Assets/imgs/Player/Tombstone.png')
+        self.rip = pygame.transform.scale2x(self.rip)
 
         # Skalowanie obrazu postaci
         self.timberman_surface = pygame.transform.scale2x(self.timberman1)
@@ -38,7 +39,7 @@ class Timberman():
         screen.blit(self.text, self.text.get_rect(center=((screen.get_width() // 2), 200)))
 
     def K_LEFT(self):
-        if self.game:
+        if game:
             # Zwiększenie wyniku i aktualizacja wyświetlanego tekstu
             self.score += 1
             self.text = self.font.render(str(self.score), True, (255, 255, 255))
@@ -56,7 +57,7 @@ class Timberman():
             self.timberman_rect.topleft = (20, 550)
 
     def K_RIGHT(self):
-        if self.game:
+        if game:
             # Zwiększenie wyniku i aktualizacja wyświetlanego tekstu
             self.score += 1
             self.text = self.font.render(str(self.score), True, (255, 255, 255))
@@ -94,7 +95,15 @@ class Timberman():
         if tree.branch_rects[0] is not None:
             if self.timberman_rect.colliderect(tree.branch_rects[0]):
                 # Ustawienie gry na false, gdy dojdzie do kolizji
-                self.game = False
+                self.timberman_surface = self.rip
+
+                if self.facing_right:
+                    self.timberman_rect = self.timberman_surface.get_rect(topleft=(400, 540))
+                else:
+                    self.timberman_rect = self.timberman_surface.get_rect(topleft=(15, 540))
+
+                return False
+        return True
 
 
 class Tree():
@@ -118,7 +127,7 @@ class Tree():
         # Losowe rozmieszczenie gałęzi
         self.branch_list = [None, None, None,
                             random.choice([None, self.branch_left_surface, self.branch_right_surface]),
-                            random.choice([None, self.branch_left_surface, self.branch_right_surface]),
+                            None,
                             random.choice([None, self.branch_left_surface, self.branch_right_surface])]
 
         # Lista prostokątów dla gałęzi
@@ -155,17 +164,18 @@ class Tree():
                 self.branch_rects.append(None)
 
     def click(self):
-        # Usunięcie pierwszego elementu (gałęzi) z listy
-        self.branch_list.pop(0)
+        if game:
+            # Usunięcie pierwszego elementu (gałęzi) z listy
+            self.branch_list.pop(0)
 
-        # Dodanie nowej gałęzi na końcu listy w zależności od ostatniej gałęzi
-        if self.branch_list[-1] == self.branch_right_surface:
-            self.branch_list.append(
-                random.choice([None, None, self.branch_right_surface]))  # Zwiększenie szansy na None
-        elif self.branch_list[-1] == self.branch_left_surface:
-            self.branch_list.append(random.choice([None, None, self.branch_left_surface]))  # Zwiększenie szansy na None
-        else:
-            self.branch_list.append(random.choice([None, self.branch_left_surface, self.branch_right_surface]))
+            # Dodanie nowej gałęzi na końcu listy w zależności od ostatniej gałęzi
+            if self.branch_list[-1] == self.branch_right_surface:
+                self.branch_list.append(
+                    random.choice([None, None, self.branch_right_surface]))  # Zwiększenie szansy na None
+            elif self.branch_list[-1] == self.branch_left_surface:
+                self.branch_list.append(random.choice([None, None, self.branch_left_surface]))  # Zwiększenie szansy na None
+            else:
+                self.branch_list.append(random.choice([None, self.branch_left_surface, self.branch_right_surface]))
 
 
 # Inicjalizacja Pygame
@@ -186,11 +196,18 @@ clock = pygame.time.Clock()
 timber_animation1 = pygame.USEREVENT + 1
 pygame.time.set_timer(timber_animation1, 200)
 
+game = True
+
 # Utworzenie obiektu Timberman
 timberman = Timberman()
 
 # Utworzenie obiektu Tree
 tree = Tree()
+
+# menu po śmierci
+menu = pygame.image.load('Assets/imgs/Background/menu.png')
+menu_rect = menu.get_rect(center=(320, 270))
+font = pygame.font.Font('Assets/font/DisposableDroidBB.ttf', 50)
 
 # Główna pętla gry
 while True:
@@ -198,7 +215,7 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
-        if timberman.game:
+        if game:
             if event.type == timber_animation1:
                 # Aktualizacja powierzchni postaci co 200 ms
                 timberman.update_surface()
@@ -212,19 +229,22 @@ while True:
                     tree.click()
 
     # Rysowanie tła
-    if timberman.game:
-        screen.blit(sky_surface, (0, 0))
-        screen.blit(ground_surface, (0, 0))
 
-        # Rysowanie drzewa
-        tree.draw()
+    screen.blit(sky_surface, (0, 0))
+    screen.blit(ground_surface, (0, 0))
 
-        # Rysowanie postaci
-        timberman.draw()
+    # Rysowanie drzewa
+    tree.draw()
 
-        # Sprawdzenie kolizji postaci z gałęziami
-        timberman.check_collision(tree)
+    # Rysowanie postaci
+    timberman.draw()
 
+    # Sprawdzenie kolizji postaci z gałęziami
+    game = timberman.check_collision(tree)
+
+    if not game:
+        # Rysowanie menu po śmierci
+        screen.blit(menu, menu_rect)
     # Aktualizacja ekranu
     pygame.display.update()
 
