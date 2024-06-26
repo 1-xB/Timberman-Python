@@ -6,7 +6,7 @@ Timberman to prosta gra zręcznościowa stworzona w Pythonie z wykorzystaniem bi
 
 1. Sklonuj to repozytorium na swój komputer:
    ```bash
-   git clone https://github.com/twoje-konto/timberman.git
+   git clone https://github.com/xB0bon/Timberman-Python
 2. Przejdź do katalogu z grą
     ```bash
    cd timberman
