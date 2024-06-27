@@ -207,7 +207,11 @@ tree = Tree()
 # menu po śmierci
 menu = pygame.image.load('Assets/imgs/Background/menu.png')
 menu_rect = menu.get_rect(center=(320, 270))
-font = pygame.font.Font('Assets/font/DisposableDroidBB.ttf', 50)
+font = pygame.font.Font('Assets/font/DisposableDroidBB.ttf', 60)
+
+play = pygame.image.load('Assets/imgs/Buttons/PlayButton.png')
+play_rect = play.get_rect(center=(320, 670))
+
 
 # Główna pętla gry
 while True:
@@ -223,13 +227,26 @@ while True:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT or event.key == pygame.K_a:
                     timberman.K_LEFT()
+                    # Sprawdzenie kolizji postaci z gałęziami
+                    game = timberman.check_collision(tree)
                     tree.click()
                 if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     timberman.K_RIGHT()
+                    # Sprawdzenie kolizji postaci z gałęziami
+                    game = timberman.check_collision(tree)
                     tree.click()
 
-    # Rysowanie tła
+        if not game:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                #TODO: tylko lewy przycisk
+                if play_rect.collidepoint(event.pos):
+                    # restart gry
+                    timberman = Timberman()
+                    tree = Tree()
+                    game = True
 
+
+    # Rysowanie tła
     screen.blit(sky_surface, (0, 0))
     screen.blit(ground_surface, (0, 0))
 
@@ -245,6 +262,10 @@ while True:
     if not game:
         # Rysowanie menu po śmierci
         screen.blit(menu, menu_rect)
+        text = font.render(str(timberman.score), True, (255, 255, 255))
+        text_rect = text.get_rect(center=(320, 430))
+        screen.blit(text, text_rect)
+        screen.blit(play, play_rect)
     # Aktualizacja ekranu
     pygame.display.update()
 
