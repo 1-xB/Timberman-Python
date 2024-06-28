@@ -1,9 +1,10 @@
-import pygame
-from sys import exit
 import random
+from sys import exit
+
+import pygame
 
 
-class Timberman():
+class Timberman:
     def __init__(self):
         # Wczytanie obrazów postaci
         self.timberman1 = pygame.image.load('Assets/imgs/Player/Player0.png')
@@ -30,6 +31,13 @@ class Timberman():
         # Inicjalizacja czcionki do wyświetlania wyniku
         self.font = pygame.font.Font('Assets/font/font.ttf', 50)
         self.text = self.font.render(str(self.score), True, (255, 255, 255))
+
+        # załadowanie poprzedzniego najlepszego wyniku.
+        try:
+            with open('score.txt', 'r') as file:
+                self.best_score = int(file.read().strip())
+        except ValueError:
+            self.best_score = 0
 
     def draw(self):
         # Rysowanie postaci na ekranie
@@ -90,10 +98,10 @@ class Timberman():
                 self.timberman_surface = pygame.transform.flip(self.timberman_surface, True, False)
             self.timber_now = self.timberman1
 
-    def check_collision(self, tree):
+    def check_collision(self, tre):
         # Sprawdzenie kolizji z pierwszą gałęzią
-        if tree.branch_rects[0] is not None:
-            if self.timberman_rect.colliderect(tree.branch_rects[0]):
+        if tre.branch_rects[0] is not None:
+            if self.timberman_rect.colliderect(tre.branch_rects[0]):
                 # Ustawienie gry na false, gdy dojdzie do kolizji
                 self.timberman_surface = self.rip
 
@@ -102,11 +110,18 @@ class Timberman():
                 else:
                     self.timberman_rect = self.timberman_surface.get_rect(topleft=(15, 540))
 
+                self.score_update()
                 return False
         return True
 
+    def score_update(self):
+        if self.score - 1 > self.best_score:
+            self.best_score = self.score
+            with open('score.txt', 'w') as file:
+                file.write(str(self.best_score))
 
-class Tree():
+
+class Tree:
     def __init__(self):
         # Wczytanie i skalowanie obrazów pni
         self.log_surface = pygame.image.load('Assets/imgs/Tree/Log0.png')
@@ -173,7 +188,8 @@ class Tree():
                 self.branch_list.append(
                     random.choice([None, None, self.branch_right_surface]))  # Zwiększenie szansy na None
             elif self.branch_list[-1] == self.branch_left_surface:
-                self.branch_list.append(random.choice([None, None, self.branch_left_surface]))  # Zwiększenie szansy na None
+                self.branch_list.append(random.choice([None, None, self.branch_left_surface]))
+                # Zwiększenie szansy na None
             else:
                 self.branch_list.append(random.choice([None, self.branch_left_surface, self.branch_right_surface]))
 
@@ -212,7 +228,6 @@ font = pygame.font.Font('Assets/font/DisposableDroidBB.ttf', 60)
 play = pygame.image.load('Assets/imgs/Buttons/PlayButton.png')
 play_rect = play.get_rect(center=(320, 670))
 
-
 # Główna pętla gry
 while True:
     for event in pygame.event.get():
@@ -238,13 +253,12 @@ while True:
 
         if not game:
             if event.type == pygame.MOUSEBUTTONDOWN:
-                #TODO: tylko lewy przycisk
-                if play_rect.collidepoint(event.pos):
-                    # restart gry
-                    timberman = Timberman()
-                    tree = Tree()
-                    game = True
-
+                if event.button == 1:  # lewy przycisk
+                    if play_rect.collidepoint(event.pos):
+                        # restart gry
+                        timberman = Timberman()
+                        tree = Tree()
+                        game = True
 
     # Rysowanie tła
     screen.blit(sky_surface, (0, 0))
@@ -260,11 +274,15 @@ while True:
     game = timberman.check_collision(tree)
 
     if not game:
+        timberman.score_update()
         # Rysowanie menu po śmierci
         screen.blit(menu, menu_rect)
-        text = font.render(str(timberman.score), True, (255, 255, 255))
-        text_rect = text.get_rect(center=(320, 430))
-        screen.blit(text, text_rect)
+        new_score = font.render(str(timberman.score - 1), True, (255, 255, 255))
+        new_score_rect = new_score.get_rect(center=(320, 430))
+        best_score = font.render(str(timberman.best_score - 1), True, (255, 255, 255))
+        best_score_rect = best_score.get_rect(center=(320, 310))
+        screen.blit(new_score, new_score_rect)
+        screen.blit(best_score, best_score_rect)
         screen.blit(play, play_rect)
     # Aktualizacja ekranu
     pygame.display.update()
