@@ -23,3 +23,6 @@ Timberman to prosta gra zręcznościowa stworzona w Pythonie z wykorzystaniem bi
 ## Sterowanie
 - LEWO (← lub A): ścinanie po lewej stronie.
 - PRAWO (→ lub D): ścinanie po prawej stronie.
+
+## Dodatkowe informacje
+Orginalna gra na której się wzoruje: [Link do Steam](https://store.steampowered.com/app/398710/Timberman/)
