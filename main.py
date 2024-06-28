@@ -8,13 +8,20 @@ class Timberman:
     def __init__(self):
         # Wczytanie obrazów postaci
         self.timberman1 = pygame.image.load('Assets/imgs/Player/Player0.png')
+        self.timberman1 = pygame.transform.scale2x(self.timberman1)
+
         self.timberman2 = pygame.image.load('Assets/imgs/Player/Player1.png')
+        self.timberman2 = pygame.transform.scale2x(self.timberman2)
+
         self.timberman3 = pygame.image.load('Assets/imgs/Player/Player2.png')
+        self.timberman3 = pygame.transform.scale2x(self.timberman3)
+
+        self.timberman3_flip = pygame.transform.flip(self.timberman3, True, False)
         self.rip = pygame.image.load('Assets/imgs/Player/Tombstone.png')
         self.rip = pygame.transform.scale2x(self.rip)
 
         # Skalowanie obrazu postaci
-        self.timberman_surface = pygame.transform.scale2x(self.timberman1)
+        self.timberman_surface = self.timberman1
 
         # Uzyskanie prostokąta określającego pozycję postaci
         self.timberman_rect = self.timberman_surface.get_rect(topleft=(20, 550))
@@ -31,6 +38,7 @@ class Timberman:
         # Inicjalizacja czcionki do wyświetlania wyniku
         self.font = pygame.font.Font('Assets/font/font.ttf', 50)
         self.text = self.font.render(str(self.score), True, (255, 255, 255))
+        self.better_timber = 0
 
         # załadowanie poprzedzniego najlepszego wyniku.
         try:
@@ -40,6 +48,21 @@ class Timberman:
             self.best_score = 0
 
     def draw(self):
+        if self.timberman_surface == self.timberman3 or self.timberman_surface == self.timberman3_flip:
+
+            '''Kod powstał z uwagi na powolne zmienianie się z timberman3 na timberman2 lub 1, teraz widać, 
+            że po każdym, nawet szybkim kliknięciu timberman wraca do poprzedniej formy'''
+
+            if self.better_timber >= 2:
+                if not self.facing_right:
+                    self.timberman_surface = self.timber_now
+                else:
+                    self.timberman_surface = pygame.transform.flip(self.timber_now, True, False)
+                    self.facing_right = True
+                self.better_timber = 0
+            else:
+                self.better_timber += 1
+
         # Rysowanie postaci na ekranie
         screen.blit(self.timberman_surface, self.timberman_rect)
 
@@ -47,13 +70,15 @@ class Timberman:
         screen.blit(self.text, self.text.get_rect(center=((screen.get_width() // 2), 200)))
 
     def K_LEFT(self):
-        if game:
+        if game and not start_menu:
+            self.better_timber = 0
+            Chop.play()  # dzwiek
             # Zwiększenie wyniku i aktualizacja wyświetlanego tekstu
             self.score += 1
             self.text = self.font.render(str(self.score), True, (255, 255, 255))
 
             # Zmiana powierzchni postaci przy ruchu w lewo
-            self.timberman_surface = pygame.transform.scale2x(self.timberman3)
+            self.timberman_surface = self.timberman3
             self.facing_right = False
 
             # Obracanie postaci w lewo jeśli była zwrócona w prawo
@@ -65,19 +90,20 @@ class Timberman:
             self.timberman_rect.topleft = (20, 550)
 
     def K_RIGHT(self):
-        if game:
+        if game and not start_menu:
+            Chop.play()  # dzwiek
+            self.better_timber = 0
             # Zwiększenie wyniku i aktualizacja wyświetlanego tekstu
             self.score += 1
             self.text = self.font.render(str(self.score), True, (255, 255, 255))
 
             # Zmiana powierzchni postaci przy ruchu w prawo
-            self.timberman_surface = pygame.transform.scale2x(self.timberman3)
-            self.timberman_surface = pygame.transform.flip(self.timberman_surface, True, False)
+            self.timberman_surface = self.timberman3_flip
             self.facing_right = True
 
             # Obracanie postaci w prawo jeśli była zwrócona w lewo
             if not self.facing_right:
-                self.timberman_surface = pygame.transform.flip(self.timberman_surface, True, False)
+                self.timberman_surface = self.timberman3_flip
                 self.facing_right = True
 
             # Ustawienie pozycji postaci na prawą stronę
@@ -87,35 +113,38 @@ class Timberman:
         # Aktualizacja powierzchni postaci do animacji
         if self.timber_now == self.timberman1:
             # Zmiana obrazu na timberman2
-            self.timberman_surface = pygame.transform.scale2x(self.timberman2)
+            self.timberman_surface = self.timberman2
             if self.facing_right:
                 self.timberman_surface = pygame.transform.flip(self.timberman_surface, True, False)
             self.timber_now = self.timberman2
         elif self.timber_now == self.timberman2:
             # Zmiana obrazu na timberman1
-            self.timberman_surface = pygame.transform.scale2x(self.timberman1)
+            self.timberman_surface = self.timberman1
             if self.facing_right:
                 self.timberman_surface = pygame.transform.flip(self.timberman_surface, True, False)
             self.timber_now = self.timberman1
 
     def check_collision(self, tre):
-        # Sprawdzenie kolizji z pierwszą gałęzią
-        if tre.branch_rects[0] is not None:
-            if self.timberman_rect.colliderect(tre.branch_rects[0]):
-                # Ustawienie gry na false, gdy dojdzie do kolizji
-                self.timberman_surface = self.rip
+        if game:
+            # Sprawdzenie kolizji z pierwszą gałęzią
+            if tre.branch_rects[0] is not None:
+                if self.timberman_rect.colliderect(tre.branch_rects[0]):
+                    # Ustawienie gry na false, gdy dojdzie do kolizji
+                    self.timberman_surface = self.rip
 
-                if self.facing_right:
-                    self.timberman_rect = self.timberman_surface.get_rect(topleft=(400, 540))
-                else:
-                    self.timberman_rect = self.timberman_surface.get_rect(topleft=(15, 540))
+                    if self.facing_right:
+                        self.timberman_rect = self.timberman_surface.get_rect(topleft=(400, 540))
+                    else:
+                        self.timberman_rect = self.timberman_surface.get_rect(topleft=(15, 540))
 
-                self.score_update()
-                return False
+                    self.score_update()
+                    GameOver.play()
+                    return False
         return True
 
     def score_update(self):
         if self.score - 1 > self.best_score:
+            HighScore.play()
             self.best_score = self.score
             with open('score.txt', 'w') as file:
                 file.write(str(self.best_score))
@@ -179,7 +208,7 @@ class Tree:
                 self.branch_rects.append(None)
 
     def click(self):
-        if game:
+        if game and not start_menu:
             # Usunięcie pierwszego elementu (gałęzi) z listy
             self.branch_list.pop(0)
 
@@ -196,6 +225,7 @@ class Tree:
 
 # Inicjalizacja Pygame
 pygame.init()
+pygame.mixer.init()
 
 # Ustawienia ekranu
 screen = pygame.display.set_mode((640, 960))
@@ -212,7 +242,8 @@ clock = pygame.time.Clock()
 timber_animation1 = pygame.USEREVENT + 1
 pygame.time.set_timer(timber_animation1, 200)
 
-game = True
+game = False
+start_menu = True
 
 # Utworzenie obiektu Timberman
 timberman = Timberman()
@@ -227,6 +258,54 @@ font = pygame.font.Font('Assets/font/DisposableDroidBB.ttf', 60)
 
 play = pygame.image.load('Assets/imgs/Buttons/PlayButton.png')
 play_rect = play.get_rect(center=(320, 670))
+
+# start menu
+caption = pygame.image.load('Assets/imgs/Other/caption.png')
+caption = pygame.transform.scale(caption, (caption.get_width() // 2, caption.get_height() // 2))
+caption_rect = caption.get_rect(center=(320, 180))
+
+chop1 = pygame.image.load('Assets/imgs/Other/chop1.png')
+chop1_rect = chop1.get_rect(center=(90, 870))
+chop2 = pygame.image.load('Assets/imgs/Other/chop2.png')
+chop2_rect = chop2.get_rect(center=(550, 870))
+
+chop1_right = True
+chop2_right = True
+
+
+def chop_LEFT():
+    #TODO: popraw
+    global chop1_rect, chop1_right
+    if chop1_right:
+        chop1_rect.x += 10
+        if chop1_rect.x > 320 - 180:  # Check for half window width
+            chop1_right = False
+    else:
+        chop1_rect.x -= 10
+        if chop1_rect.x < 0:  # Adjust to stay within left edge
+            chop1_right = True
+
+
+def chop_RIGHT():
+    # TODO: popraw
+    global chop2_rect, chop2_right
+    if chop2_right:
+        chop2_rect.x += 10
+        if chop2_rect.x > 640 - 180:  # Adjust to stay within right edge
+            chop2_right = False
+    else:
+        chop2_rect.x -= 10
+        if chop2_rect.x < 640 / 2:  # Check for half window width
+            chop2_right = True
+
+
+# Dzwięki
+soundtrack = pygame.mixer.Sound('Assets/Music/Soundtrack.wav')
+soundtrack.play(-1)
+Button = pygame.mixer.Sound('Assets/Sounds/Button.wav')
+Chop = pygame.mixer.Sound('Assets/Sounds/Chop.wav')
+GameOver = pygame.mixer.Sound('Assets/Sounds/GameOver.wav')
+HighScore = pygame.mixer.Sound('Assets/Sounds/HighScore.wav')
 
 # Główna pętla gry
 while True:
@@ -251,14 +330,23 @@ while True:
                     game = timberman.check_collision(tree)
                     tree.click()
 
-        if not game:
+        if not game and not start_menu:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # lewy przycisk
                     if play_rect.collidepoint(event.pos):
+                        Button.play()  # dzwięk po kliknieciu
                         # restart gry
                         timberman = Timberman()
                         tree = Tree()
                         game = True
+
+        elif start_menu and not game:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:  # lewy przycisk
+                    if play_rect.collidepoint(event.pos):
+                        Button.play()  # dzwięk po kliknieciu
+                        game = True
+                        start_menu = False
 
     # Rysowanie tła
     screen.blit(sky_surface, (0, 0))
@@ -270,10 +358,19 @@ while True:
     # Rysowanie postaci
     timberman.draw()
 
-    # Sprawdzenie kolizji postaci z gałęziami
-    game = timberman.check_collision(tree)
+    if start_menu:
+        chop_RIGHT()
+        chop_LEFT()
 
-    if not game:
+        screen.blit(caption, caption_rect)
+        screen.blit(play, play_rect)
+        screen.blit(chop1, chop1_rect)
+        screen.blit(chop2, chop2_rect)
+
+    elif game:
+        game = timberman.check_collision(tree)
+
+    elif not game:
         timberman.score_update()
         # Rysowanie menu po śmierci
         screen.blit(menu, menu_rect)
@@ -284,6 +381,8 @@ while True:
         screen.blit(new_score, new_score_rect)
         screen.blit(best_score, best_score_rect)
         screen.blit(play, play_rect)
+    # Sprawdzenie kolizji postaci z gałęziami
+
     # Aktualizacja ekranu
     pygame.display.update()
 
