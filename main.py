@@ -4,6 +4,26 @@ from sys import exit
 import pygame
 
 
+class Main:
+    def __init__(self):
+        # Timebar inicjalizacja
+        self.timebar_surface = pygame.image.load('Assets/imgs/Other/TimeBar.png')
+        self.timebar_surface = pygame.transform.scale(self.timebar_surface, (260, 80))
+        self.timebar_rect = self.timebar_surface.get_rect(center=(screen.get_width() // 2, 150))
+
+        self.rectangle_bg = pygame.Rect(195, 115, 250, 70)
+        self.width = 119  # max: 234, min: 2, half: 119
+        self.height = 65
+        self.main_rectangle = pygame.Rect(203, 115, self.width, self.height)
+
+    def draw(self):
+        self.width -= 0.5
+        self.main_rectangle = pygame.Rect(203, 115, int(self.width), self.height)
+        pygame.draw.rect(screen, '#3c2d00', self.rectangle_bg, )
+        pygame.draw.rect(screen, '#bd2800', self.main_rectangle)
+        screen.blit(self.timebar_surface, self.timebar_rect)
+
+
 class Timberman:
     def __init__(self):
         # Wczytanie obrazów postaci
@@ -50,8 +70,7 @@ class Timberman:
     def draw(self):
         if self.timberman_surface == self.timberman3 or self.timberman_surface == self.timberman3_flip:
 
-            '''Kod powstał z uwagi na powolne zmienianie się z timberman3 na timberman2 lub 1, teraz widać, 
-            że po każdym, nawet szybkim kliknięciu timberman wraca do poprzedniej formy'''
+            '''Szybciej zmienia się z timberman3 na domyslny'''
 
             if self.better_timber >= 2:
                 if not self.facing_right:
@@ -67,7 +86,7 @@ class Timberman:
         screen.blit(self.timberman_surface, self.timberman_rect)
 
         # Wyświetlanie wyniku na środku ekranu
-        screen.blit(self.text, self.text.get_rect(center=((screen.get_width() // 2), 200)))
+        screen.blit(self.text, self.text.get_rect(center=((screen.get_width() // 2), 300)))
 
     def K_LEFT(self):
         if game and not start_menu:
@@ -124,11 +143,11 @@ class Timberman:
                 self.timberman_surface = pygame.transform.flip(self.timberman_surface, True, False)
             self.timber_now = self.timberman1
 
-    def check_collision(self, tre):
+    def check_collision(self, treeinstance, maininstance):
         if game:
             # Sprawdzenie kolizji z pierwszą gałęzią
-            if tre.branch_rects[0] is not None:
-                if self.timberman_rect.colliderect(tre.branch_rects[0]):
+            if treeinstance.branch_rects[0] is not None:
+                if self.timberman_rect.colliderect(treeinstance.branch_rects[0]):
                     # Ustawienie gry na false, gdy dojdzie do kolizji
                     self.timberman_surface = self.rip
 
@@ -140,9 +159,17 @@ class Timberman:
                     self.score_update()
                     GameOver.play()
                     return False
+
+            elif maininstance.width <= 2:
+                self.timberman_surface = self.rip
+
+                self.score_update()
+                GameOver.play()
+                return False
         return True
 
     def score_update(self):
+        # TODO: napraw
         if self.score - 1 > self.best_score:
             HighScore.play()
             self.best_score = self.score
@@ -251,6 +278,8 @@ timberman = Timberman()
 # Utworzenie obiektu Tree
 tree = Tree()
 
+main = Main()
+
 # menu po śmierci
 menu = pygame.image.load('Assets/imgs/Background/menu.png')
 menu_rect = menu.get_rect(center=(320, 270))
@@ -322,13 +351,17 @@ while True:
                 if event.key == pygame.K_LEFT or event.key == pygame.K_a:
                     timberman.K_LEFT()
                     # Sprawdzenie kolizji postaci z gałęziami
-                    game = timberman.check_collision(tree)
+                    game = timberman.check_collision(tree, main)
                     tree.click()
+                    if main.width < 234:
+                        main.width += 5
                 if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     timberman.K_RIGHT()
                     # Sprawdzenie kolizji postaci z gałęziami
-                    game = timberman.check_collision(tree)
+                    game = timberman.check_collision(tree, main)
                     tree.click()
+                    if main.width < 240:
+                        main.width += 5
 
         if not game and not start_menu:
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -338,6 +371,7 @@ while True:
                         # restart gry
                         timberman = Timberman()
                         tree = Tree()
+                        main = Main()
                         game = True
 
         elif start_menu and not game:
@@ -368,7 +402,8 @@ while True:
         screen.blit(chop2, chop2_rect)
 
     elif game:
-        game = timberman.check_collision(tree)
+        game = timberman.check_collision(tree, main)
+        main.draw()
 
     elif not game:
         timberman.score_update()
