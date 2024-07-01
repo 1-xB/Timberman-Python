@@ -16,12 +16,27 @@ class Main:
         self.height = 65
         self.main_rectangle = pygame.Rect(203, 115, self.width, self.height)
 
+        # przezroczysty rect do pause
+        self.gray = (128, 128, 128)
+        self.rect_surface = pygame.Surface((640, 960), pygame.SRCALPHA)  # Wymiary prostokąta
+        self.rect_surface.fill((self.gray[0], self.gray[1], self.gray[2], 128))  # Ostatnia wartość to alpha (0-255)
+
+        #pause button
+        self.pause_button = pygame.image.load('Assets/imgs/Buttons/PauseButton.png')
+        self.pause_button = pygame.transform.scale(self.pause_button, (60, 60))
+        self.pause_button_rect = self.pause_button.get_rect(center=(600, 40))
+
+
     def draw(self):
-        self.width -= 0.5
+        if not escape_menu:
+            self.width -= 0.5
         self.main_rectangle = pygame.Rect(203, 115, int(self.width), self.height)
         pygame.draw.rect(screen, '#3c2d00', self.rectangle_bg, )
         pygame.draw.rect(screen, '#bd2800', self.main_rectangle)
         screen.blit(self.timebar_surface, self.timebar_rect)
+        if escape_menu:
+            screen.blit(self.rect_surface, (0, 0))
+        screen.blit(self.pause_button, self.pause_button_rect)
 
 
 class Timberman:
@@ -89,7 +104,9 @@ class Timberman:
         screen.blit(self.text, self.text.get_rect(center=((screen.get_width() // 2), 300)))
 
     def K_LEFT(self):
-        if game and not start_menu:
+        global game
+        game = self.check_collision()
+        if game and not start_menu and not escape_menu:
             self.better_timber = 0
             Chop.play()  # dzwiek
             # Zwiększenie wyniku i aktualizacja wyświetlanego tekstu
@@ -109,7 +126,8 @@ class Timberman:
             self.timberman_rect.topleft = (20, 550)
 
     def K_RIGHT(self):
-        if game and not start_menu:
+        global game
+        if game and not start_menu and not escape_menu:
             Chop.play()  # dzwiek
             self.better_timber = 0
             # Zwiększenie wyniku i aktualizacja wyświetlanego tekstu
@@ -143,11 +161,11 @@ class Timberman:
                 self.timberman_surface = pygame.transform.flip(self.timberman_surface, True, False)
             self.timber_now = self.timberman1
 
-    def check_collision(self, treeinstance, maininstance):
+    def check_collision(self):
         if game:
             # Sprawdzenie kolizji z pierwszą gałęzią
-            if treeinstance.branch_rects[0] is not None:
-                if self.timberman_rect.colliderect(treeinstance.branch_rects[0]):
+            if tree.branch_rects[0] is not None:
+                if self.timberman_rect.colliderect(tree.branch_rects[0]):
                     # Ustawienie gry na false, gdy dojdzie do kolizji
                     self.timberman_surface = self.rip
 
@@ -160,7 +178,7 @@ class Timberman:
                     GameOver.play()
                     return False
 
-            elif maininstance.width <= 2:
+            elif main.width <= 2:
                 self.timberman_surface = self.rip
 
                 self.score_update()
@@ -235,7 +253,7 @@ class Tree:
                 self.branch_rects.append(None)
 
     def click(self):
-        if game and not start_menu:
+        if game and not start_menu and not escape_menu:
             # Usunięcie pierwszego elementu (gałęzi) z listy
             self.branch_list.pop(0)
 
@@ -271,6 +289,7 @@ pygame.time.set_timer(timber_animation1, 200)
 
 game = False
 start_menu = True
+escape_menu = False
 
 # Utworzenie obiektu Timberman
 timberman = Timberman()
@@ -343,7 +362,7 @@ while True:
             pygame.quit()
             exit()
         if game:
-            if event.type == timber_animation1:
+            if event.type == timber_animation1 and not escape_menu:
                 # Aktualizacja powierzchni postaci co 200 ms
                 timberman.update_surface()
 
@@ -351,17 +370,31 @@ while True:
                 if event.key == pygame.K_LEFT or event.key == pygame.K_a:
                     timberman.K_LEFT()
                     # Sprawdzenie kolizji postaci z gałęziami
-                    game = timberman.check_collision(tree, main)
+                    game = timberman.check_collision()
                     tree.click()
-                    if main.width < 234:
+                    if main.width < 234 and not escape_menu:
                         main.width += 5
                 if event.key == pygame.K_RIGHT or event.key == pygame.K_d:
                     timberman.K_RIGHT()
                     # Sprawdzenie kolizji postaci z gałęziami
-                    game = timberman.check_collision(tree, main)
+                    game = timberman.check_collision()
                     tree.click()
-                    if main.width < 240:
+                    if main.width < 240 and not escape_menu:
                         main.width += 5
+
+                if event.key == pygame.K_ESCAPE:
+                    if escape_menu:
+                        escape_menu = False
+                    else:
+                        escape_menu = True
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:  # lewy przycisk
+                    if main.pause_button_rect.collidepoint(event.pos):
+                        Button.play()
+                        if escape_menu:
+                            escape_menu = False
+                        else:
+                            escape_menu = True
 
         if not game and not start_menu:
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -402,7 +435,7 @@ while True:
         screen.blit(chop2, chop2_rect)
 
     elif game:
-        game = timberman.check_collision(tree, main)
+        game = timberman.check_collision()
         main.draw()
 
     elif not game:
