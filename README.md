@@ -1,8 +1,6 @@
 # Timberman-Python
 Timberman to prosta gra zręcznościowa stworzona w Pythonie z wykorzystaniem biblioteki Pygame. Gracz steruje drwalem, który musi ścinać drzewo, unikając przy tym gałęzi. Za każde ścięcie drzewa gracz otrzymuje punkt.
 
-# Gra nie jest skończona!
-
 ## Instalacja
 
 1. Sklonuj to repozytorium na swój komputer:
